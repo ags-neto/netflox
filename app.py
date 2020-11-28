@@ -2,7 +2,6 @@ import database
 
 
 def menu():
-
     menu_interface = """-- Netflox --
     1) Sign Up
     2) Log in
@@ -30,9 +29,9 @@ def menu():
 
 
 def client():
-
     client_interface = """
         1) Search products
+        2) View all
         2) My history
         3) Messages
         0) Exit
@@ -52,15 +51,24 @@ def client():
                 7) Price
                 0) Exit
                 Your Selection: """
-            
-            #range of dates
-            #range of prices
+
+            # range of dates
+            # range of prices
 
             while (search_input := input(search_interface)) != '0':
 
                 if search_input == '1':
                     name = input("Insert actor name: ")
-                    database.findby_name(name) #doesnt exist yet
+                    database.findby_name(name)  # doesnt exist yet
+        if client_input  == '2':
+            database.view_allmovies()
+            client_interface_view = "\nselecione um filme ou pressione zero para saír "
+            while (client_input_view := input(client_interface_view)) !='0':
+                if client_input_view != '0':
+                    database.view_movieinfo(client_input_view)
+
+
+
 
 
 menu()

@@ -26,7 +26,7 @@ def menu():
 
         else:
             print("Invalid input, please try again")
-
+    return(email)
 
 def client():
     client_interface = """
@@ -41,7 +41,7 @@ def client():
 
         if client_input == '1':
 
-            search_interface = """Order by
+            search_interface = """Search  by
                 1) Name
                 2) Actor
                 3) Director
@@ -66,10 +66,28 @@ def client():
             while (client_input_view := input(client_interface_view)) !='0':
                 if client_input_view != '0':
                     database.view_movieinfo(client_input_view)
+                    client_input_view_buy =input ("press 1 to buy press 0 to leave\n")
+                    if client_input_view_buy == '1':
+                        client_input_view_buy=input("are you sure you want to buy?\n(press 1 yes press 0 no)")
+                        print("\no seu saldo é :")
+                        saldo=database.view_saldo(email)
+                        print(" o item custa:")
+                        custo=database.view_custo(client_input_view)
+                        client_input_view_buy = input("press 1 to confirm press 0 to leave\n")
+                        if client_input_view_buy == '1':
+                            if(custo<saldo):
+                               print("item bought successefully!\n")
+                               database.compra_filme(custo,saldo,email)
+                               print("saldo atual:\n")
+                               database.view_saldo(email)
+                            else:
+                                print("nao tem saldo suficiente")
 
 
 
 
 
-menu()
+
+email=menu()
+
 client()

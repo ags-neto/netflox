@@ -125,3 +125,15 @@ def create_rent(custo,email,moviename):
     conn.commit()
     conn.close()
 
+def view_rent(email):
+    conn = psycopg2.connect("host=localhost dbname=projeto user=postgres password=<REDACTED>")
+    c = conn.cursor()
+    c.execute("SELECT * FROM rent WHERE usermail = '" + email + "'")
+    results = c.fetchall()
+    for x in results:
+        print(x)
+
+
+    conn.commit()
+    conn.close()
+

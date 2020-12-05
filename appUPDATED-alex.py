@@ -22,6 +22,7 @@ def menu():
             email = input("Enter your e-mail: ")
             password = input("Enter your password: ")
             if database.log_in(email, password):
+                database.view_saldo(email)
                 break
 
         else:
@@ -33,7 +34,7 @@ def client():
         1) Search products
         2) View all
         3) View my products
-        4) My history
+        4) My movements
         5) Messages
         0) Exit
         Your Selection: """
@@ -66,7 +67,7 @@ def client():
             client_interface_view = "\nselecione um filme ou pressione zero para saír "
             while (client_input_view := input(client_interface_view)) !='0':
                 if client_input_view != '0':
-                    database.view_movieinfo(client_input_view)
+                    moviename=database.view_movieinfo(client_input_view)
                     client_input_view_buy =input ("press 1 to buy press 0 to leave\n")
                     if client_input_view_buy == '1':
                         client_input_view_buy=input("are you sure you want to buy?\n(press 1 yes press 0 no)")
@@ -79,10 +80,17 @@ def client():
                             if(custo<saldo):
                                print("item bought successefully!\n")
                                database.compra_filme(custo,saldo,email)
-                               database.create_rent(custo,email)
+                               database.create_rent(custo,email,moviename)
                                print("saldo atual:\n")
                                database.view_saldo(email)
                             else:
                                 print("nao tem saldo suficiente")
-        if client_input == '3':
-            #por fazer
+
+
+
+
+
+
+email=menu()
+
+client()

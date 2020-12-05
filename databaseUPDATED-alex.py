@@ -56,6 +56,14 @@ def view_movieinfo(filme):
     movies = c.fetchall()
     for x in movies:
         print(x)
+
+    if movies:
+        for i in movies:
+            break
+    else:
+        print("\n---movie name not correct---\n")
+        return(0)
+
     return(x[1])
     conn.commit()
     conn.close()
@@ -103,7 +111,9 @@ def create_rent(custo,email,moviename):
     for y in results2:
         break
 
-    c.execute("INSERT INTO rent(clientid,date,price,dateend,usermail,timeavaible) VALUES ( %s, CURRENT_TIMESTAMP , %s, CURRENT_TIMESTAMP + %s * INTERVAL '1 month','"+email+"',%s)",(y[4],custo,x[8],x[8])) #falta  tempo aos filmes
+
+    type=x[9]
+    c.execute("INSERT INTO rent(clientid,date,price,dateend,usermail,timeavaible,type) VALUES ( %s, CURRENT_TIMESTAMP , %s, CURRENT_TIMESTAMP + %s * INTERVAL '1 month','"+email+"',%s,'"+type+"')",(y[4],custo,x[8],x[8])) #falta  tempo aos filmes
 
     c.execute("SELECT date + timeavaible * INTERVAL '1 month' FROM rent;")
     results3 = c.fetchall()

@@ -67,7 +67,10 @@ def client():
             client_interface_view = "\nselecione um filme ou pressione zero para saír "
             while (client_input_view := input(client_interface_view)) !='0':
                 if client_input_view != '0':
+                    print("id  name,  actorid, director, imdbrating, genre, price, year, timeavaible, type")
                     moviename=database.view_movieinfo(client_input_view)
+                    if moviename==0:
+                        break
                     client_input_view_buy =input ("press 1 to buy press 0 to leave\n")
                     if client_input_view_buy == '1':
                         client_input_view_buy=input("are you sure you want to buy?\n(press 1 yes press 0 no)")
@@ -85,7 +88,8 @@ def client():
                                database.view_saldo(email)
                             else:
                                 print("nao tem saldo suficiente")
-
+        if client_input  == '4':
+            database.view_rent(email)
 
 
 

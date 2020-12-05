@@ -23,7 +23,8 @@ def log_in(email, password):
 
     if results:
         for i in results:
-            print("Welcome " + i[1])
+            print("Welcome " + i[1]+"your balance is")
+
         return 1
     else:
         print("Email and password not recognised")
@@ -55,7 +56,7 @@ def view_movieinfo(filme):
     movies = c.fetchall()
     for x in movies:
         print(x)
-    results = c.fetchall()
+    return(x[1])
     conn.commit()
     conn.close()
 
@@ -89,12 +90,28 @@ def compra_filme(custo,saldo,email):
     conn.commit()
     conn.close()
 
-def create_rent(custo,email):
+def create_rent(custo,email,moviename):
     conn = psycopg2.connect("host=localhost dbname=projeto user=postgres password=<REDACTED>")
     c = conn.cursor()
-    c.execute("INSERT INTO rent VALUES (1, 1, '2020-01-01', %s, '2020-02-01','"+email+"')",(custo,)) #falta adicionar userid e movie id whatever
+    timeavaible=c.execute("SELECT * FROM movies WHERE name ='"+moviename+"'")
+    results = c.fetchall()
+    for x in results:
+        break
+
+    userid=c.execute("SELECT * FROM users WHERE email ='"+email+"'")
+    results2 = c.fetchall()
+    for y in results2:
+        break
+
+    c.execute("INSERT INTO rent(clientid,date,price,dateend,usermail,timeavaible) VALUES ( %s, CURRENT_TIMESTAMP , %s, CURRENT_TIMESTAMP + %s * INTERVAL '1 month','"+email+"',%s)",(y[4],custo,x[8],x[8])) #falta  tempo aos filmes
+
+    c.execute("SELECT date + timeavaible * INTERVAL '1 month' FROM rent;")
+    results3 = c.fetchall()
+    for z in results3:
+        break
+
+   # c.execute("INSERT INTO rent(dateend) VALUES('z')")
+
     conn.commit()
     conn.close()
 
-
-#proximo passo e fazer o 3 do interface

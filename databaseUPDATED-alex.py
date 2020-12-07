@@ -142,6 +142,7 @@ def view_avaible_movies(email):
     c = conn.cursor()
     c.execute("SELECT * FROM rent WHERE dateend >= CURRENT_TIMESTAMP AND usermail='"+email+"'")
     results = c.fetchall()
+    print("------------")
     print("movies available:")
     id = 0
     for x in results:
@@ -152,7 +153,7 @@ def view_avaible_movies(email):
         for y in movies:
             print(y[1])
 
-    print("\n")
+    print("------------")
     print("movies not available any more:")
     c.execute("SELECT * FROM rent WHERE CURRENT_TIMESTAMP > dateend  AND usermail='" + email + "'")
     results2 = c.fetchall()
@@ -163,6 +164,7 @@ def view_avaible_movies(email):
         movies2 = c.fetchall()
         for r in movies2:
             print(r[1])
+    print("------------")
 
 
 def findby_name(name):
@@ -336,5 +338,38 @@ def view_allmovies_orderimdb():
         print(str(x[4])+"-----"+x[1])
     conn.commit()
     conn.close()
+
+#def view_availablemovies_ordertitle(email):
+
+
+def view_availablemovies_orderdirector(email):
+    conn = psycopg2.connect("host=localhost dbname=projeto user=postgres password=<REDACTED>")
+    c = conn.cursor()
+    c.execute("SELECT * FROM rent WHERE dateend >= CURRENT_TIMESTAMP AND usermail='"+email+"'")
+    results = c.fetchall()
+    print("------------")
+    print("movies available:")
+    id = 0
+    for x in results:
+        id=x[8] #id's que queremos ir buscar
+        c.execute("SELECT * FROM movies WHERE itemid = '"+str(id)+"' ORDER BY director")
+    movies = c.fetchall()
+    for y in movies:
+        print(y[3]+"---"+y[1])
+
+    print("------------")
+    print("movies not available any more:")
+    c.execute("SELECT * FROM rent WHERE CURRENT_TIMESTAMP > dateend  AND usermail='" + email + "'")
+    results2 = c.fetchall()
+    id = 0
+    for z in results2:
+        id2 = z[8]
+        c.execute("SELECT * FROM movies WHERE itemid = "+ str(z[8]) )
+        movies2 = c.fetchall()
+        for r in movies2:
+            print(r[1])
+    print("------------")
+#def view_availablemovies_orderdate(email):
+#def view_availablemovies_orderimdb(email):
 
 

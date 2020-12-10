@@ -133,14 +133,6 @@ def client():
             print("clientid, date start,                                   price,                     date end,                 usermail,months, id, type, movieid")
             database.view_rent(USERID)
 
-
-
-
-
-
-
-
-
         if client_input == '5':
             message_interface = """
     1) View unread messages
@@ -188,6 +180,76 @@ def admin():
             monthsavaible= input("\tHow many months will this movie be available: ")
             type= input("\tPlease insert 'movie' or 'series': ")
             database.add_article(name, actorid, director, imbdrating, genre, price,year,monthsavaible,type)
+
+        if admin_input == '2':
+
+            search_interface = """Search  by
+                1) Name
+                2) Actor
+                3) Director
+                4) Type
+                0) Exit
+                Your Selection: """
+
+            while (search_input := input(search_interface)) != '0':
+                if search_input == '1':
+                    name = input("Insert movie name: ")
+                    database.findby_name(name)
+                if search_input == '2':
+                    actor = input("Insert actor name: ")
+                    database.findby_actor(actor)
+
+                if search_input == '4':
+                    type = input("Insert 'movie' or 'series': ")
+                    database.findby_type(type)
+
+                if search_input == '3':
+                    director = input("Insert Director name: ")
+                    database.findby_director(director)
+
+                if search_input == '4':
+                    type = input("Insert 'movie' or 'series': ")
+                    database.findby_type(type)
+
+        if admin_input  == '3':
+            database.view_allmovies()
+            client_input_view = input("Select a movie or\nOrder by: 1.Title 2. Director 3.Date of release 4.Imdb rating 0.Go back\n")
+            if client_input_view == '1':
+                print("ordered by title:\n")
+                database.view_allmovies_ordertitle()
+
+            if client_input_view == '2':
+                print("ordered by Director:\n")
+                database.view_allmovies_orderdirector()
+            if client_input_view == '3':
+                print("ordered by Date of Realease:\n")
+                database.view_allmovies_orderdate()
+            if client_input_view == '4':
+                print("ordered by Imdb rating:\n")
+                database.view_allmovies_orderimdb()
+
+            if (client_input_view != '0') and (client_input_view != '1') and (client_input_view != '2') and (client_input_view != '3') and (client_input_view != '4') :
+                print("id  name,  actorid, director, imdbrating, genre, price, year, timeavaible, type")
+                moviename=database.view_movieinfo(client_input_view)
+                if moviename==0:
+                     break
+                client_input_view_buy =input ("press 1 to buy press 0 to leave\n")
+                if client_input_view_buy == '1':
+                    client_input_view_buy=input("are you sure you want to buy?\n(press 1 yes press 0 no)")
+                    print("\no seu saldo é :")
+                    saldo=database.view_saldo(USERID)
+                    print(" o item custa:")
+                    custo=database.view_custo(client_input_view)
+                    client_input_view_buy = input("press 1 to confirm press 0 to leave\n")
+                    if client_input_view_buy == '1':
+                        if(custo<saldo):
+                            print("item bought successefully!\n")
+                            database.compra_filme(custo,saldo,USERID)
+                            database.create_rent(custo,USERID,moviename)
+                            print("saldo atual:\n")
+                            database.view_saldo(USERID)
+                        else:
+                            print("nao tem saldo suficiente")
 
         if admin_input == '4':
             print("\n\tChange price")

@@ -76,7 +76,7 @@ def client():
         if client_input == '2':
             database.view_allmovies()
             client_input_view = input(
-                "\tSelect a movie or\n\tOrder by: 1.Title 2. Director 3.Date of release 4.Imdb rating 0.Go back: ")
+                "\tSelect a movie or\n\tOrder by: 1)Title, 2)Director, 3)Date of release, 4)Imdb rating, 0)Go back: ")
             if client_input_view == '1':
                 print("\tordered by title:\n")
                 database.view_allmovies_ordertitle()
@@ -93,7 +93,7 @@ def client():
 
             if (client_input_view != '0') and (client_input_view != '1') and (client_input_view != '2') and (
                     client_input_view != '3') and (client_input_view != '4'):
-                print("\tid  name,  actorid, director, imdbrating, genre, price, year, timeavaible, type")
+                print("\tid  name, actorid, director, imdbrating, genre, price, year, timeavaible, type")
                 moviename = database.view_movieinfo(client_input_view)
                 if moviename == 0:
                     break
@@ -116,23 +116,23 @@ def client():
         if client_input == '3':
             database.view_available_movies(USERID)
             client_input_available_movies = input(
-                "Order by: 1.Title 2. Director 3.Date of release 4.Imdb rating 0.Go back\n")
+                "\tOrder by: 1)Title, 2)Director, 3)Date of release 4)Imdb rating 0)Go back: ")
             if client_input_available_movies == '1':
-                print("ordered by title:\n")
+                print("\tordered by title:\n")
                 # database.view_availablemovies_ordertitle(USERID)
             if client_input_available_movies == '2':
-                print("ordered by Director:\n")
+                print("\tordered by Director:\n")
                 database.view_availablemovies_orderdirector(USERID)
             if client_input_available_movies == '3':
-                print("ordered by Date of Realease:\n")
+                print("\tordered by Date of Realease:\n")
                 # database.view_availablemovies_orderdate(USERID)
             if client_input_available_movies == '4':
-                print("ordered by Imdb rating:\n")
+                print("\tordered by Imdb rating:\n")
                 # database.view_availablemovies_orderimdb(USERID)
 
         if client_input == '4':
             print(
-                "clientid, date start,                                   price,                     date end,                 usermail,months, id, type, movieid")
+                "\n\tclientid,           date start,                         price,                     date end,                 usermail,months, id, type, movieid")
             database.view_rent(USERID)
 
         if client_input == '5':

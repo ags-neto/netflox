@@ -1,5 +1,5 @@
 import database
-
+#para ser admin tem de conter @netflox.com
 
 def menu():
     menu_interface = """
@@ -46,16 +46,88 @@ def client():
     2) Purchase
     0) Exit
     Your Selection: """
+    search_interface = """
+    1) Title
+    2) Director
+    3) Type
+    4) Actors
+    Your Selection: """
     client_interface = """
-    1) List all articles
-    2) Order by
-    3) View my articles
-    4) My history
-    5) Messages
+    1) Search articles
+    2) List all articles
+    3) Order by
+    4) View my articles
+    5) My history
+    6) Messages
     0) Exit
     Your Selection: """
     while (client_input := input(client_interface)) != '0':
         if client_input == '1':
+            while (client_search := input(search_interface)) != '0':
+                if client_search == '1':
+                    client_search_typo=input("\tInsert movie name: ")
+                    article=database.findby_name(client_search_typo)
+                    while (x := int(input("\tYour Selection: "))) != 0:
+                        print("\n\t" + article[x - 1][1])
+                        while (client_in := input(article_interface)) != '0':
+                            if client_in == '1':
+                                database.view_details(article[x - 1][0])
+                            if client_in == '2':
+                                if str(input("\n\tAre you sure (y/n): ")) == "y":
+                                    database.purchase(article[x - 1][0], USERID)
+                                    pass
+                                else:
+                                    pass
+                        break
+
+                if client_search == '2':
+                    client_search_typo=input("\tInsert movie director: ")
+                    article=database.findby_director(client_search_typo)
+                    while (x := int(input("\tYour Selection: "))) != 0:
+                        print("\n\t" + article[x - 1][1])
+                        while (client_in := input(article_interface)) != '0':
+                            if client_in == '1':
+                                database.view_details(article[x - 1][0])
+                            if client_in == '2':
+                                if str(input("\n\tAre you sure (y/n): ")) == "y":
+                                    database.purchase(article[x - 1][0], USERID)
+                                    pass
+                                else:
+                                    pass
+                        break
+
+                if client_search == '3':
+                    client_search_typo=input("\tInsert movie type: ")
+                    article=database.findby_type(client_search_typo)
+                    while (x := int(input("\tYour Selection: "))) != 0:
+                        print("\n\t" + article[x - 1][1])
+                        while (client_in := input(article_interface)) != '0':
+                            if client_in == '1':
+                                database.view_details(article[x - 1][0])
+                            if client_in == '2':
+                                if str(input("\n\tAre you sure (y/n): ")) == "y":
+                                    database.purchase(article[x - 1][0], USERID)
+                                    pass
+                                else:
+                                    pass
+                        break
+                if client_search == '4':
+                    client_search_typo=input("\tInsert movie actor: ")
+                    article=database.findby_actor(client_search_typo)
+                    while (x := int(input("\tYour Selection: "))) != 0:
+                        print("\n\t" + article[x - 1][1])
+                        while (client_in := input(article_interface)) != '0':
+                            if client_in == '1':
+                                database.view_details(article[x - 1][0])
+                            if client_in == '2':
+                                if str(input("\n\tAre you sure (y/n): ")) == "y":
+                                    database.purchase(article[x - 1][0], USERID)
+                                    pass
+                                else:
+                                    pass
+                        break
+
+        if client_input == '2':
             article = database.list_all()
             while (x := int(input("\tYour Selection: "))) != 0:
                 print("\n\t" + article[x - 1][1])
@@ -70,7 +142,7 @@ def client():
                             pass
                 break
 
-        if client_input == '2':
+        if client_input == '3':
             while (client_in := input(order_interface)) != '0':
                 if client_in == '1':
                     article = database.order_title()
@@ -178,16 +250,16 @@ def client():
                         break
                     break
 
-        if client_input == '3':
+        if client_input == '4':
             article_id = database.my_articles(USERID)
             if article_id != 0:
                 database.time_left(article_id, USERID)
 
-        if client_input == '4':
+        if client_input == '5':
             if database.my_history(USERID) == 0:
                 pass
 
-        if client_input == '5':
+        if client_input == '6':
             message_interface = """
     1) View unread messages
     2) View read messages
@@ -214,6 +286,7 @@ def admin():
     4) Remove article
     5) Messages
     6) Alter user balance
+    7) Statistics
     0) Exit
     Your Selection: """
     admin_article = """
@@ -279,6 +352,9 @@ def admin():
             userid = input("\tUser id: ")
             balance = input("\tNew balance: ")
             database.alter_balance(userid, balance)
+
+        if admin_input == '7':
+            database.statistics()
 
 
 if menu() != -1:

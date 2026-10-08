@@ -139,4 +139,6 @@ encript.jpg            image from the original upload; no code or schema reads i
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Copyright (c) 2020 **André Neto and
+Alexandre Cavadas de Almeida**, both named as authors in the course report
+(`docs/relatorio-BD.pdf`).

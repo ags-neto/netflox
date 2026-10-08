@@ -11,7 +11,7 @@
 
 The data model has seven tables - `users`, `articles`, `actors`, `articles_actors`, `rents`, `messages`, `pricehistory` - and it exists only in `schema.sql`: it was reconstructed from the queries, and no table or column was invented. The code reads rows by position (`SELECT *` followed by `row[1]`, `row[4]`, ...), so the column order in that file is part of the contract.
 
-Some behaviour is broken and was left as it is, because fixing the application was not part of reconstructing its database. The suite pins each case with a test named `test_known_bug_*` or marked `xfail`: `findby_director()` returns nothing when it finds a match; `findby_actor()` raises `UnboundLocalError` when nothing matches; a search with no results returns the integer `0`, which `main.py` then indexes into; `purchase()` deducts the money from the account of the last login instead of the account in its argument; the message list shows the recipient's name as the author; `remove_article()` checks only the rentals that are still open, while the foreign keys also block the older ones; and a few paths never close their connection.
+The defects the tests used to pin are fixed. `findby_director()` printed its matches and returned nothing; `findby_actor()` raised `UnboundLocalError` when no actor matched, and returned only the last article of an actor that had several; a search with no results returned the integer `0`, which `main.py` then indexed into; `purchase()` debited the account of the last login instead of the account in its argument; the message list showed the recipient's name as the author; `remove_article()` checked only the rentals that were still open, so the foreign keys on the older ones and on `pricehistory` turned the refusal into a traceback; `show_unread_messages()` returned `None` instead of an empty list; `database.USERID` was created by `log_in()`, so leaving the menu with `0` raised `AttributeError`; and several functions returned before closing their connection, leaving `idle in transaction` sessions behind. Every connection is opened and closed in one context manager now, and each of these defects has a regression test.
 
 The archive `Projeto_Netflox_Alexandre_Almeida_Andre_Neto.zip` is not tracked any more (it was removed in commit `17f75ec`) because it contained a copy of `database.py` with the database password in clear. If that password was ever used for anything other than a local test database, it has to be rotated. The passwords used now are chosen locally and are not in the repository.
 
@@ -91,13 +91,22 @@ make test
 
 ```text
 .venv/bin/python -m pytest -q
-...........................xx...                                         [100%]
-30 passed, 2 xfailed in 8.87s
+........................................                                 [100%]
+40 passed in 13.30s
 ```
 
 The suite is end to end and needs the container: before every test `tests/conftest.py` recreates the `public` schema through the same helper the Makefile uses, and the tests then call the real functions of `database.py` - the ones `main.py` calls - against PostgreSQL. Nothing is mocked except the keyboard. It checks the column order and the keys against `information_schema`, then walks the flows: sign up and log in (including the two rejected cases), catalogue search and detail view, ordering, a rent with its balance and end date, the refused rent, current and expired rentals, a message that is read, a broadcast to everybody except the sender, adding an article with a reused actor, a price change with its history, the two removal paths, and the statistics. Three tests guard the credentials: `database.py` must refuse to import without `NETFLOX_DB_PASSWORD`, no connection string may contain a password literal, and no tracked file may contain the value of that variable.
 
-Two tests are marked `xfail` and four are named `test_known_bug_*`: they document the defects listed under "What it is" instead of hiding them. When one of those bugs is fixed, the corresponding test has to change.
+The tests at the end of `tests/test_netflox.py` are the regression suite: each one fails against the code before the fix and passes after it - there is no `xfail` and no `test_known_bug_*` left. "Known limitations" below lists what was deliberately left alone.
+
+### Known limitations
+
+Not fixed, and not covered by the suite, because they are the shape of the interface
+rather than a defect with a single right answer: every statement is built by string
+concatenation, so the input is interpolated into the SQL; the menus index the list they
+just printed without checking the range (`article[x - 1]` past the end raises
+`IndexError`); and `database.my_articles()` / `database.my_history()` read from the
+keyboard, which puts the menu inside the data layer.
 
 ## Structure
 

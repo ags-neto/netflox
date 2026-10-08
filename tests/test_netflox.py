@@ -6,12 +6,13 @@ real functions of database.py - the same ones main.py calls. Nothing is mocked
 except keyboard input: if the schema does not match what the code expects, these
 tests fail.
 
-Tests named `test_known_bug_*` and the ones marked `xfail` pin down behaviour
-that is wrong in database.py / main.py; they are documentation, not approval
-(see README, "Known limitations").
+Every defect that used to be pinned here by an `xfail` or a `test_known_bug_*`
+name now has a regression test that fails against the previous code; the last
+section of this file is that regression suite (see README, "What it is").
 """
 from __future__ import annotations
 
+import ast
 import builtins
 import contextlib
 import datetime
@@ -318,7 +319,7 @@ def test_message_to_one_client_then_mark_it_read(capsys):
     assert scalar("SELECT bolread FROM messages") is True
     read = database.show_read_messages(client)
     assert len(read) == 1 and read[0][1] == "Bem-vindo"
-    assert database.show_unread_messages(client) is None  # documented quirk
+    assert database.show_unread_messages(client) == []  # an empty list, not None
 
 
 def test_message_all_reaches_every_user_except_the_sender(capsys):
@@ -472,47 +473,167 @@ def test_schema_sql_does_not_carry_the_demo_password():
 
 
 # --------------------------------------------------------------------------
-# known bugs, pinned so that they are visible instead of silent
+# regressions: every test below used to be an xfail or a `test_known_bug_*`
 # --------------------------------------------------------------------------
-@pytest.mark.xfail(reason="findby_director() has no return on the success path")
-def test_known_bug_findby_director_returns_nothing_on_a_match():
-    assert database.findby_director("Christopher Nolan") is not None
+def test_findby_director_returns_the_rows_it_printed(capsys):
+    """It printed the matches and fell off the end of the function (None)."""
+    movies = database.findby_director("Christopher Nolan")
+    assert movies is not None
+    assert [row[1] for row in movies] == ["Interstellar"]
+    assert movies[0][2] == "Christopher Nolan"        # column order kept
+    assert "Interstellar" in capsys.readouterr().out
+
+    assert database.findby_director("zzz-nao-existe") == []
 
 
-@pytest.mark.xfail(reason="findby_actor() raises UnboundLocalError when no actor matches")
-def test_known_bug_findby_actor_without_a_match():
+def test_findby_actor_without_a_match_returns_none():
+    """It used to raise UnboundLocalError: `articles` was never bound."""
     assert database.findby_actor("Ninguem Com Este Nome") is None
 
 
-def test_known_bug_search_without_matches_breaks_main_py():
-    """findby_name() returns 0, and main.py immediately does article[x - 1][1]."""
-    assert database.findby_name("zzz-nao-existe") == 0
+def test_findby_actor_returns_every_article_of_the_actor():
+    """It used to return whatever `articles` held after the last iteration: only
+    the last article of the actor, out of a list that could have several."""
+    with raw_cursor() as cur:
+        cur.execute("INSERT INTO articles (name, director, release_year, imbd_rating,"
+                    " genre, price, type, time_available) VALUES ('John Wick',"
+                    " 'Chad Stahelski', 2014, 7.4, 'action', 2.00, 'movie', 7)"
+                    " RETURNING itemid")
+        second = cur.fetchone()[0]
+        cur.execute("INSERT INTO articles_actors (articles_itemid, actors_actorid)"
+                    " SELECT %s, actorid FROM actors WHERE name = 'Keanu Reeves'",
+                    (second,))
+
+    movies = database.findby_actor("Keanu Reeves")
+    assert sorted(row[1] for row in movies) == ["John Wick", "The Matrix"]
+    assert movies[0] == database.findby_name("The Matrix")[0]
 
 
-def test_known_bug_message_list_labels_a_message_with_the_recipient(capsys):
-    """show_unread_messages() looks the author up with row[4], which is the
-    recipient (users_userid); the sender is row[5]. A client therefore sees their
-    own name as the author of every message."""
+def test_search_without_matches_returns_an_empty_list():
+    """It used to return the integer 0, which main.py then indexed into."""
+    assert database.findby_name("zzz-nao-existe") == []
+    assert database.findby_type("zzz-nao-existe") == []
+
+
+def test_message_list_shows_the_sender_not_the_recipient(capsys):
+    """The author was looked up with row[4] (the recipient) instead of row[5]."""
     client = make_client()
     admin = user_id(ADMIN_EMAIL)
     database.message_client("Ola", str(client), str(admin))
     capsys.readouterr()
 
-    database.show_unread_messages(client)
+    unread = database.show_unread_messages(client)
     out = capsys.readouterr().out
-    assert "Message from Ana" in out          # the recipient, not the admin
-    assert "Message from Admin" not in out
+    assert "Message from Admin" in out
+    assert "Message from Ana" not in out
+
+    database.read_message(unread[0][0])               # the read list had it too
+    capsys.readouterr()
+    database.show_read_messages(client)
+    out = capsys.readouterr().out
+    assert "Message from Admin" in out
+    assert "Message from Ana" not in out
 
 
-def test_known_bug_purchase_debits_the_last_logged_in_account():
-    """database.py:294 updates the balance WHERE userid = USERID (the global set by
-    the last log_in), while the rent is inserted for the userid argument."""
+def test_purchase_debits_the_account_it_was_given(capsys):
+    """It debited USERID (the account of the last log_in), not its argument."""
     ana = make_client("Ana", "ana@exemplo.pt")
     bruno = make_client("Bruno", "bruno@exemplo.pt")
+    assert database.log_in("ana@exemplo.pt", demo_password()) == 1  # Ana is the last login
 
-    assert database.log_in("ana@exemplo.pt", demo_password()) == 1
     database.purchase(article_id("Pulp Fiction"), bruno)
+    assert "Purchase successful!" in capsys.readouterr().out
 
-    assert balance_of(ana) == Decimal("17.50")   # Ana paid
-    assert balance_of(bruno) == Decimal("20.00")
-    assert scalar("SELECT users_userid FROM rents") == bruno
+    assert balance_of(bruno) == Decimal("17.50")      # 20.00 - 2.50, the buyer
+    assert balance_of(ana) == Decimal("20.00")        # the last login, untouched
+    assert scalar("SELECT count(*) FROM rents WHERE users_userid = %s", (bruno,)) == 1
+
+
+def test_remove_article_is_refused_with_rent_history_and_it_says_why(capsys):
+    """Only the *current* rents were checked, so the older ones - which the
+    foreign key also protects - turned the removal into a traceback."""
+    client = make_client()
+    itemid = article_id("The Matrix")
+    database.purchase(itemid, client)
+    with raw_cursor() as cur:
+        cur.execute("UPDATE rents SET end_date = CURRENT_DATE - 1"
+                    " WHERE articles_itemid = %s", (itemid,))
+
+    database.remove_article(str(itemid))              # main.py always passes a string
+    out = capsys.readouterr().out
+    assert "Can't remove article" in out
+    assert "rental history" in out                    # explained, not a traceback
+    assert scalar("SELECT count(*) FROM articles WHERE itemid = %s", (itemid,)) == 1
+
+
+def test_remove_article_is_refused_while_the_price_history_keeps_it(capsys):
+    """pricehistory carries a foreign key to the article as well."""
+    itemid = article_id("The Matrix")
+    database.change_price("The Matrix", "9.99")       # writes one pricehistory row
+    capsys.readouterr()
+
+    database.remove_article(str(itemid))
+    out = capsys.readouterr().out
+    assert "Can't remove article" in out
+    assert "price history" in out
+    assert scalar("SELECT count(*) FROM articles WHERE itemid = %s", (itemid,)) == 1
+    assert scalar("SELECT count(*) FROM pricehistory") == 1
+
+
+def test_a_failing_call_does_not_leave_its_session_idle_in_transaction():
+    """A traceback keeps its frame alive, and the frame held the connection:
+    findby_type()/findby_actor()/findby_director() returned before conn.close()
+    and statistics() never closed at all, so the session stayed open."""
+    try:
+        database.view_details(999999)             # no such article: IndexError
+    except IndexError as exc:
+        held = exc.__traceback__                  # keeps the frame, and its connection
+    assert held is not None
+
+    assert scalar("SELECT count(*) FROM pg_stat_activity"
+                  " WHERE datname = current_database()"
+                  " AND state = 'idle in transaction'") == 0
+
+
+def test_no_function_opens_a_connection_outside_the_managed_helper():
+    """Structural guard: one place opens and closes, so no early return can leave
+    an `idle in transaction` session behind again."""
+    source = (ROOT / "database.py").read_text(encoding="utf-8")
+    assert source.count("psycopg2.connect(") == 1
+
+    tree = ast.parse(source)
+    openers = sorted(
+        node.name for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef)
+        and "psycopg2.connect(" in (ast.get_source_segment(source, node) or "")
+    )
+    assert openers == ["_connection"]
+
+
+
+def test_userid_exists_and_is_none_before_any_login():
+    """database.USERID was created by log_in(), so the code that runs before a
+    login read an attribute that did not exist (AttributeError)."""
+    proc = subprocess.run([sys.executable, "-c", "import database; print(database.USERID)"],
+                          cwd=ROOT, capture_output=True, text=True, env=os.environ.copy())
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "None"
+
+
+def test_leaving_the_menu_with_zero_exits_without_a_traceback():
+    """`0` at the first menu used to be compared with -1, fall into the client
+    branch and read database.USERID before anybody had logged in."""
+    proc = subprocess.run([sys.executable, "main.py"], cwd=ROOT, input="0\n",
+                          capture_output=True, text=True, env=os.environ.copy())
+    assert proc.returncode == 0, proc.stderr
+    assert "Traceback" not in proc.stderr
+    assert "Goodbye" in proc.stdout
+
+
+def test_an_administrator_login_opens_the_administrator_menu():
+    proc = subprocess.run([sys.executable, "main.py"], cwd=ROOT,
+                          input=f"2\n{ADMIN_EMAIL}\n{demo_password()}\n0\n",
+                          capture_output=True, text=True, env=os.environ.copy())
+    assert proc.returncode == 0, proc.stderr
+    assert "Welcome Admin" in proc.stdout
+    assert "Change price" in proc.stdout              # the administrator menu

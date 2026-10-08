@@ -67,6 +67,9 @@ def client():
                 if client_search == '1':
                     client_search_typo=input("\tInsert movie name: ")
                     article=database.findby_name(client_search_typo)
+                    if not article:
+                        print("\n\tNo article matches that search")
+                        continue
                     while (x := int(input("\tYour Selection: "))) != 0:
                         print("\n\t" + article[x - 1][1])
                         while (client_in := input(article_interface)) != '0':
@@ -83,6 +86,9 @@ def client():
                 if client_search == '2':
                     client_search_typo=input("\tInsert movie director: ")
                     article=database.findby_director(client_search_typo)
+                    if not article:
+                        print("\n\tNo article matches that search")
+                        continue
                     while (x := int(input("\tYour Selection: "))) != 0:
                         print("\n\t" + article[x - 1][1])
                         while (client_in := input(article_interface)) != '0':
@@ -99,6 +105,9 @@ def client():
                 if client_search == '3':
                     client_search_typo=input("\tInsert movie type: ")
                     article=database.findby_type(client_search_typo)
+                    if not article:
+                        print("\n\tNo article matches that search")
+                        continue
                     while (x := int(input("\tYour Selection: "))) != 0:
                         print("\n\t" + article[x - 1][1])
                         while (client_in := input(article_interface)) != '0':
@@ -114,6 +123,9 @@ def client():
                 if client_search == '4':
                     client_search_typo=input("\tInsert movie actor: ")
                     article=database.findby_actor(client_search_typo)
+                    if not article:
+                        print("\n\tNo article matches that search")
+                        continue
                     while (x := int(input("\tYour Selection: "))) != 0:
                         print("\n\t" + article[x - 1][1])
                         while (client_in := input(article_interface)) != '0':
@@ -268,6 +280,8 @@ def client():
             while (client_input := input(message_interface)) != '0':
                 if client_input == '1':
                     y = database.show_unread_messages(USERID)
+                    if not y:
+                        continue
                     while (x := int(input("\tYour Selection: "))) != 0:
                         database.read_message(y[x - 1][0])
                         print("\n\t" + y[x - 1][1])
@@ -357,9 +371,17 @@ def admin():
             database.statistics()
 
 
-if menu() != -1:
+# menu() returns 1 for a client, -1 for an administrator and None when the
+# user leaves with 0. That last case used to be tested with `!= -1`, so it
+# went into the client branch and read database.USERID, which did not exist
+# until somebody logged in (AttributeError). Nobody is logged in there, so
+# neither menu is opened.
+role = menu()
+if role == -1:
+    USERID = database.USERID
+    admin()
+elif role == 1:
     USERID = database.USERID
     client()
 else:
-    USERID = database.USERID
-    admin()
+    print("\n\tGoodbye")

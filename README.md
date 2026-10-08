@@ -91,22 +91,34 @@ make test
 
 ```text
 .venv/bin/python -m pytest -q
-........................................                                 [100%]
-40 passed in 13.30s
+.......................................................                  [100%]
+55 passed in 16.70s
 ```
 
 The suite is end to end and needs the container: before every test `tests/conftest.py` recreates the `public` schema through the same helper the Makefile uses, and the tests then call the real functions of `database.py` - the ones `main.py` calls - against PostgreSQL. Nothing is mocked except the keyboard. It checks the column order and the keys against `information_schema`, then walks the flows: sign up and log in (including the two rejected cases), catalogue search and detail view, ordering, a rent with its balance and end date, the refused rent, current and expired rentals, a message that is read, a broadcast to everybody except the sender, adding an article with a reused actor, a price change with its history, the two removal paths, and the statistics. Three tests guard the credentials: `database.py` must refuse to import without `NETFLOX_DB_PASSWORD`, no connection string may contain a password literal, and no tracked file may contain the value of that variable.
 
-The tests at the end of `tests/test_netflox.py` are the regression suite: each one fails against the code before the fix and passes after it - there is no `xfail` and no `test_known_bug_*` left. "Known limitations" below lists what was deliberately left alone.
+The tests at the end of `tests/test_netflox.py` are the regression suite: each one fails against the code before the fix and passes after it - there is no `xfail` and no `test_known_bug_*` left. `tests/test_injection.py` is the same kind of suite for the SQL: every statement in `database.py` is parameterized now, so a stacked `DROP TABLE`, an apostrophe in `O'Brien` and quotes inside a stored message are all just text. "Known limitations" below lists what was deliberately left alone.
 
 ### Known limitations
 
 Not fixed, and not covered by the suite, because they are the shape of the interface
-rather than a defect with a single right answer: every statement is built by string
-concatenation, so the input is interpolated into the SQL; the menus index the list they
-just printed without checking the range (`article[x - 1]` past the end raises
-`IndexError`); and `database.my_articles()` / `database.my_history()` read from the
-keyboard, which puts the menu inside the data layer.
+rather than a defect with a single right answer:
+
+- the menus index the list they just printed without checking the range, so
+  `article[x - 1]` past the end raises `IndexError`;
+- `database.my_articles()` / `database.my_history()` read from the keyboard with
+  `input()`, which puts the menu inside the data layer;
+- `database.message_all()` sizes its `while` loop with
+  `Sum(pg_column_size(userid))/4` instead of `count(*)`, so it stays tied to
+  `users.userid` being a 4-byte `int4` numbered from 1 without gaps;
+- the client menu in `main.py` keeps its own copy of `USERID`
+  (`USERID = database.USERID`) while the administrator menu reads
+  `database.USERID`, so the two can drift apart.
+
+The SQL injection that used to be listed here is gone: the 48 statements that
+interpolated a value are parameterized (`%s` with the value in a tuple), and no
+identifier comes from input - every table and column name is a literal. The tests in
+`tests/test_injection.py` fail against the previous version and pass against this one.
 
 ## Structure
 
@@ -115,7 +127,8 @@ database.py            every SQL statement and the connection; reads NETFLOX_DB_
 main.py                the menus: menu() -> client() or admin()
 schema.sql             the relational schema (7 tables, primary and foreign keys) and the minimal seed
 scripts/db.py          applies schema.sql and loads the demo rows; used by make schema/seed and the tests
-tests/conftest.py      recreates the schema before every test; tests/test_netflox.py is the suite
+tests/conftest.py      recreates the schema before every test; tests/*.py are the suites
+                       (test_netflox.py the flows, test_injection.py the SQL)
 docker-compose.yml     throwaway PostgreSQL (NetfloxFinal, postgres, 127.0.0.1:5432)
 Makefile               up, schema, seed, run, test, down (plus venv, clean, help)
 requirements.txt       psycopg2-binary; requirements-dev.txt adds pytest

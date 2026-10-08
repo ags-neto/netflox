@@ -52,7 +52,11 @@ def create_user(name, email, password):
             print("\n\tCan't create accounts under netflox domain")
 
         else:
-            c.execute("INSERT INTO users (nome, email, password, balance) VALUES ('" + name + "','" + email + "','" + password + "',20)")
+            c.execute(
+                "INSERT INTO users (nome, email, password, balance)"
+                " VALUES (%s, %s, %s, 20)",
+                (name, email, password),
+            )
 
         conn.commit()
         conn.close()
@@ -60,7 +64,10 @@ def log_in(email, password):
     with _connection() as conn:
         c = conn.cursor()
 
-        c.execute("SELECT * FROM users WHERE email = '" + email + "' AND password = '" + password + "'")
+        c.execute(
+            "SELECT * FROM users WHERE email = %s AND password = %s",
+            (email, password),
+        )
         results = c.fetchall()
 
         global USERID
@@ -94,7 +101,10 @@ def show_unread_messages(userid):
     with _connection() as conn:
         c = conn.cursor()
 
-        c.execute("SELECT * FROM messages WHERE users_userid = " + str(userid) + " AND bolread = FALSE")
+        c.execute(
+            "SELECT * FROM messages WHERE users_userid = %s AND bolread = FALSE",
+            (userid,),
+        )
         results = c.fetchall()
 
         if results:
@@ -103,7 +113,7 @@ def show_unread_messages(userid):
             for i in results:
                 # i[4] is the recipient, i[5] is the sender: the list used to name
                 # every message after the account that received it.
-                c.execute("SELECT * FROM users WHERE userid = " + str(i[5]))
+                c.execute("SELECT * FROM users WHERE userid = %s", (i[5],))
                 sender = c.fetchall()
                 for x in sender:
                     y += 1
@@ -121,13 +131,16 @@ def show_read_messages(userid):
     with _connection() as conn:
         c = conn.cursor()
 
-        c.execute("SELECT * FROM messages WHERE users_userid = " + str(userid) + " AND bolread = TRUE")
+        c.execute(
+            "SELECT * FROM messages WHERE users_userid = %s AND bolread = TRUE",
+            (userid,),
+        )
         messages = c.fetchall()
 
         y = 0
         print("\r")
         for i in messages:
-            c.execute("SELECT * FROM users WHERE userid = " + str(i[5]))
+            c.execute("SELECT * FROM users WHERE userid = %s", (i[5],))
             sender = c.fetchall()
             for x in sender:
                 y += 1
@@ -141,7 +154,7 @@ def read_message(msgid):
     with _connection() as conn:
         c = conn.cursor()
 
-        c.execute("UPDATE messages SET bolread = TRUE WHERE msgid='" + str(msgid) + "'")
+        c.execute("UPDATE messages SET bolread = TRUE WHERE msgid = %s", (msgid,))
 
         conn.commit()
         conn.close()
@@ -160,8 +173,11 @@ def message_all(msg, senderid):
         while i < size:
             if results[i][0] != senderid:
                 c.execute(
-                    "INSERT INTO messages (message, bolread, users_userid, senderid, data) VALUES ('" + msg + "', FALSE, '" + str(
-                        results[i][0]) + "', '" + str(senderid) + "', CURRENT_DATE)")
+                    "INSERT INTO messages"
+                    " (message, bolread, users_userid, senderid, data)"
+                    " VALUES (%s, FALSE, %s, %s, CURRENT_DATE)",
+                    (msg, results[i][0], senderid),
+                )
             i += 1
 
         print("\n\tMessage sent to all")
@@ -173,8 +189,11 @@ def message_client(msg, recieverid, senderid):
         c = conn.cursor()
 
         c.execute(
-            "INSERT INTO messages (message, bolread, users_userid, senderid, data) VALUES ('" + msg + "', FALSE, '" +
-            str(recieverid) + "', '" + str(senderid) + "', CURRENT_DATE)")
+            "INSERT INTO messages"
+            " (message, bolread, users_userid, senderid, data)"
+            " VALUES (%s, FALSE, %s, %s, CURRENT_DATE)",
+            (msg, recieverid, senderid),
+        )
 
         print("\n\tMessage sent successfully")
 
@@ -185,7 +204,7 @@ def message_client(msg, recieverid, senderid):
 def findby_name(name):
     with _connection() as conn:
         c = conn.cursor()
-        c.execute("SELECT * FROM articles WHERE name like '%" + name + "%'")
+        c.execute("SELECT * FROM articles WHERE name like %s", ("%" + name + "%",))
         movies = c.fetchall()
         y = 0
         for x in movies:
@@ -203,7 +222,10 @@ def findby_director(director):
     with _connection() as conn:
         y = 0
         c = conn.cursor()
-        c.execute("SELECT * FROM articles WHERE director like '%" + director + "%'")
+        c.execute(
+            "SELECT * FROM articles WHERE director like %s",
+            ("%" + director + "%",),
+        )
         movies = c.fetchall()
         for x in movies:
             y = y + 1
@@ -220,7 +242,7 @@ def findby_type(type):
     with _connection() as conn:
         y = 0
         c = conn.cursor()
-        c.execute("SELECT * FROM articles WHERE type like '%" + type + "%'")
+        c.execute("SELECT * FROM articles WHERE type like %s", ("%" + type + "%",))
         movies = c.fetchall()
         for x in movies:
             y = y + 1
@@ -237,17 +259,20 @@ def findby_actor(actor):
     with _connection() as conn:
         j = 0
         c = conn.cursor()
-        c.execute("SELECT * FROM actors WHERE name like('%" + actor + "%')")
+        c.execute("SELECT * FROM actors WHERE name like %s", ("%" + actor + "%",))
         actors = c.fetchall()
         print("\r")
         articles = []
         for x in actors:
             actorid = x[0]
-            c.execute("SELECT * FROM articles_actors WHERE actors_actorid = '" + str(actorid) + "' ")
+            c.execute(
+                "SELECT * FROM articles_actors WHERE actors_actorid = %s",
+                (actorid,),
+            )
             articles_actors = c.fetchall()
             for y in articles_actors:
                 j = j + 1
-                c.execute("SELECT * FROM articles WHERE itemid  = '" + str(y[0]) + "' ")
+                c.execute("SELECT * FROM articles WHERE itemid = %s", (y[0],))
                 matched = c.fetchall()
                 if matched:
                     articles.append(matched[0])
@@ -278,7 +303,7 @@ def list_all():
 def view_details(itemid):
     with _connection() as conn:
         c = conn.cursor()
-        c.execute("SELECT * FROM articles WHERE itemid = '"+str(itemid)+"'")
+        c.execute("SELECT * FROM articles WHERE itemid = %s", (itemid,))
         article = c.fetchall()[0]
         print("\n\tTitle: "+str(article[1]))
         print("\tDirector: " + str(article[2]))
@@ -290,11 +315,13 @@ def view_details(itemid):
         print("\tTime available: " + str(article[8]) + " days")
         print("\tActors: ")
 
-        c.execute("SELECT * FROM articles_actors WHERE articles_itemid = '" + str(itemid) + "'")
+        c.execute(
+            "SELECT * FROM articles_actors WHERE articles_itemid = %s", (itemid,)
+        )
         actors = c.fetchall()
 
         for i in actors:
-            c.execute("SELECT * FROM actors WHERE actorid = '" + str(i[1]) + "'")
+            c.execute("SELECT * FROM actors WHERE actorid = %s", (i[1],))
             actors_name = c.fetchall()[0][1]
             print("\t\t"+str(actors_name))
 
@@ -304,10 +331,10 @@ def purchase(itemid, userid):
     with _connection() as conn:
         c = conn.cursor()
 
-        c.execute("SELECT balance FROM users WHERE userid = '" + str(userid) + "'")
+        c.execute("SELECT balance FROM users WHERE userid = %s", (userid,))
         balance = c.fetchall()[0][0]
 
-        c.execute("SELECT price FROM articles WHERE itemid = '" + str(itemid) + "'")
+        c.execute("SELECT price FROM articles WHERE itemid = %s", (itemid,))
         cost = c.fetchall()[0][0]
 
         if balance >= cost:
@@ -315,12 +342,21 @@ def purchase(itemid, userid):
             # The debit follows the userid argument, not USERID (the account of
             # the last log_in): buying for somebody else used to charge the
             # logged-in account while the rent went to the argument.
-            c.execute("UPDATE users SET balance= '" + str(new_balance) + "' WHERE userid='" + str(userid) + "'")
+            c.execute(
+                "UPDATE users SET balance = %s WHERE userid = %s",
+                (new_balance, userid),
+            )
 
-            c.execute("SELECT time_available FROM articles WHERE itemid = '" + str(itemid) + "'")
+            c.execute(
+                "SELECT time_available FROM articles WHERE itemid = %s", (itemid,)
+            )
             time_available = c.fetchall()[0][0]
 
-            c.execute("INSERT INTO rents (purchased_date, end_date, articles_itemid, users_userid) VALUES (CURRENT_DATE, CURRENT_DATE +" + str(int(time_available)) + ",'" + str(itemid) + "','" + str(userid) + "')")
+            c.execute(
+                "INSERT INTO rents (purchased_date, end_date, articles_itemid,"
+                " users_userid) VALUES (CURRENT_DATE, CURRENT_DATE + %s, %s, %s)",
+                (int(time_available), itemid, userid),
+            )
 
             print("\n\tPurchase successful!")
             print("\tNew balance: " + str(new_balance) + "€")
@@ -440,7 +476,11 @@ def my_articles(userid):
     with _connection() as conn:
         c = conn.cursor()
 
-        c.execute("SELECT * FROM rents WHERE end_date >= CURRENT_DATE AND users_userid = '" + str(userid) + "' ORDER BY articles_itemid")
+        c.execute(
+            "SELECT * FROM rents WHERE end_date >= CURRENT_DATE"
+            " AND users_userid = %s ORDER BY articles_itemid",
+            (userid,),
+        )
         rents = c.fetchall()
 
         if rents:
@@ -448,7 +488,10 @@ def my_articles(userid):
             print("\n\tMy articles:\n")
             for i in rents:
                 y += 1
-                c.execute("SELECT * FROM articles WHERE itemid = '" + str(i[3]) + "' ORDER BY itemid")
+                c.execute(
+                    "SELECT * FROM articles WHERE itemid = %s ORDER BY itemid",
+                    (i[3],),
+                )
                 articles = c.fetchall()
                 print("\t"+str(articles[0][0])+") "+str(articles[0][1]))
 
@@ -463,7 +506,11 @@ def my_history(userid):
     with _connection() as conn:
         c = conn.cursor()
 
-        c.execute("SELECT * FROM rents WHERE end_date < CURRENT_DATE AND users_userid = '" + str(userid) + "' ORDER BY articles_itemid")
+        c.execute(
+            "SELECT * FROM rents WHERE end_date < CURRENT_DATE"
+            " AND users_userid = %s ORDER BY articles_itemid",
+            (userid,),
+        )
         rents = c.fetchall()
 
         if rents:
@@ -471,7 +518,10 @@ def my_history(userid):
             print("\n\tMy old articles:\n")
             for i in rents:
                 y += 1
-                c.execute("SELECT * FROM articles WHERE itemid = '" + str(i[3]) + "' ORDER BY itemid")
+                c.execute(
+                    "SELECT * FROM articles WHERE itemid = %s ORDER BY itemid",
+                    (i[3],),
+                )
                 articles = c.fetchall()
                 print("\t" + str(articles[0][1]))
 
@@ -486,7 +536,10 @@ def time_left(itemid, userid):
     with _connection() as conn:
         c = conn.cursor()
 
-        c.execute("SELECT * FROM rents WHERE articles_itemid = "+str(itemid)+" AND users_userid = '"+str(userid)+"'")
+        c.execute(
+            "SELECT * FROM rents WHERE articles_itemid = %s AND users_userid = %s",
+            (itemid, userid),
+        )
         time = c.fetchall()[0][2]
 
         print("\n\tItem available until "+str(time))
@@ -499,8 +552,13 @@ def add_article(name, director, imbd_rating, genre, price, year, time_available,
     with _connection() as conn:
         c = conn.cursor()
 
-        c.execute("INSERT INTO articles(name, director, release_year, imbd_rating, genre, price, type, time_available)  VALUES('" + name + "','" + director + "', '" + year + "','" + imbd_rating + "','" + genre + "','" + price + "','" + type + "','" + time_available + "')")
-        c.execute("SELECT * FROM articles WHERE name = '" + name + "'")
+        c.execute(
+            "INSERT INTO articles(name, director, release_year, imbd_rating,"
+            " genre, price, type, time_available)"
+            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            (name, director, year, imbd_rating, genre, price, type, time_available),
+        )
+        c.execute("SELECT * FROM articles WHERE name = %s", (name,))
         item_id = c.fetchall()[0][0]
 
         n_actors = int(input("\n\tNumber of actors: "))
@@ -509,16 +567,24 @@ def add_article(name, director, imbd_rating, genre, price, year, time_available,
             x += 1
             name_actor = str(input("\n\tActor name: "))
 
-            c.execute("SELECT * FROM actors WHERE name ='" + name_actor + "'")
+            c.execute("SELECT * FROM actors WHERE name = %s", (name_actor,))
             actor = c.fetchall()
 
             if actor:
-                c.execute("INSERT INTO articles_actors(articles_itemid, actors_actorid) VALUES ('" + str(item_id) + "', '" + str(actor[0][0]) + "' )")
+                c.execute(
+                    "INSERT INTO articles_actors (articles_itemid, actors_actorid)"
+                    " VALUES (%s, %s)",
+                    (item_id, actor[0][0]),
+                )
             else:
-                c.execute("INSERT INTO actors (name) VALUES ('" + name_actor + "')")
-                c.execute("SELECT * FROM actors WHERE name ='" + name_actor + "'")
+                c.execute("INSERT INTO actors (name) VALUES (%s)", (name_actor,))
+                c.execute("SELECT * FROM actors WHERE name = %s", (name_actor,))
                 actor_id = c.fetchall()[0][0]
-                c.execute("INSERT INTO articles_actors(articles_itemid, actors_actorid) VALUES ('" + str(item_id) + "', '" + str(actor_id) + "')")
+                c.execute(
+                    "INSERT INTO articles_actors (articles_itemid, actors_actorid)"
+                    " VALUES (%s, %s)",
+                    (item_id, actor_id),
+                )
 
         print("\n\tSuccess!")
 
@@ -530,21 +596,25 @@ def change_price(n_id, newprice):
 
         itemid = n_id
         if isinstance(n_id, str):
-            c.execute("SELECT itemid FROM articles WHERE name = '" + n_id + "'")
+            c.execute("SELECT itemid FROM articles WHERE name = %s", (n_id,))
             n_id = c.fetchall()
             for i in n_id:
                 itemid = i[0]
 
-        c.execute("SELECT price FROM articles WHERE itemid = '" + str(itemid) + "'")
+        c.execute("SELECT price FROM articles WHERE itemid = %s", (itemid,))
         result = c.fetchall()
         oldprice = 0
         for i in result:
             oldprice = i[0]
 
-        c.execute("UPDATE articles SET price = '" + str(newprice) + "' WHERE itemid = '" + str(itemid) + "'")
         c.execute(
-            "INSERT INTO pricehistory(old_price, change_date, articles_itemid) VALUES('" + str(oldprice) + "', CURRENT_DATE,'" + str(
-                itemid) + "')")
+            "UPDATE articles SET price = %s WHERE itemid = %s", (newprice, itemid)
+        )
+        c.execute(
+            "INSERT INTO pricehistory(old_price, change_date, articles_itemid)"
+            " VALUES(%s, CURRENT_DATE, %s)",
+            (oldprice, itemid),
+        )
 
         print("\n\tPrice updated successfully")
         print("\tOld price saved to history")
@@ -557,12 +627,16 @@ def remove_article(n_id):
 
         itemid = n_id
         if isinstance(n_id, str):
-            c.execute("SELECT itemid FROM articles WHERE name = '" + n_id + "'")
+            c.execute("SELECT itemid FROM articles WHERE name = %s", (n_id,))
             n_id = c.fetchall()
             for i in n_id:
                 itemid = i[0]
 
-        c.execute("SELECT * FROM rents WHERE articles_itemid = '" + str(itemid) + "' AND CURRENT_DATE < end_date")
+        c.execute(
+            "SELECT * FROM rents WHERE articles_itemid = %s"
+            " AND CURRENT_DATE < end_date",
+            (itemid,),
+        )
         result = c.fetchall()
         if result:
             print("\n\tCan't remove article because there are user(s) renting it")
@@ -571,9 +645,13 @@ def remove_article(n_id):
         # The foreign keys block the article through the rents that already ended
         # and through its price history too; checking only the open rents turned
         # the refusal into a ForeignKeyViolation traceback.
-        c.execute("SELECT count(*) FROM rents WHERE articles_itemid = '" + str(itemid) + "'")
+        c.execute(
+            "SELECT count(*) FROM rents WHERE articles_itemid = %s", (itemid,)
+        )
         old_rents = c.fetchall()[0][0]
-        c.execute("SELECT count(*) FROM pricehistory WHERE articles_itemid = '" + str(itemid) + "'")
+        c.execute(
+            "SELECT count(*) FROM pricehistory WHERE articles_itemid = %s", (itemid,)
+        )
         price_changes = c.fetchall()[0][0]
         if old_rents or price_changes:
             kept_by = []
@@ -586,8 +664,10 @@ def remove_article(n_id):
             return
 
         try:
-            c.execute("DELETE FROM articles_actors WHERE articles_itemid = '" + str(itemid) + "'")
-            c.execute("DELETE FROM articles WHERE itemid = '" + str(itemid) + "'")
+            c.execute(
+                "DELETE FROM articles_actors WHERE articles_itemid = %s", (itemid,)
+            )
+            c.execute("DELETE FROM articles WHERE itemid = %s", (itemid,))
         except psycopg2.errors.ForeignKeyViolation:
             conn.rollback()
             print("\n\tCan't remove article because another table still refers to it")
@@ -600,7 +680,9 @@ def alter_balance(userid, balance):
     with _connection() as conn:
         c = conn.cursor()
 
-        c.execute("UPDATE users SET balance = '" + str(balance) + "' WHERE userid='" + str(userid) + "'")
+        c.execute(
+            "UPDATE users SET balance = %s WHERE userid = %s", (balance, userid)
+        )
 
         print("\n\tBalance updated successfully")
 
@@ -613,7 +695,7 @@ def statistics():
         c.execute("SELECT articles_itemid FROM rents")
         rents = c.fetchall()
         for x in rents:
-            c.execute("SELECT * FROM articles WHERE itemid= '"+str(x[0])+"' ")
+            c.execute("SELECT * FROM articles WHERE itemid = %s", (x[0],))
             price=c.fetchall()
             for y in price:
                 total=total+y[6]
@@ -659,7 +741,7 @@ def statistics():
         c.execute("SELECT * FROM rents WHERE end_date > CURRENT_DATE ")
         rents2 = c.fetchall()
         for e in rents2:
-            c.execute("SELECT * FROM articles WHERE itemid= '"+str(e[3])+"' ")
+            c.execute("SELECT * FROM articles WHERE itemid = %s", (e[3],))
             price2=c.fetchall()
             for d in price2:
                 total2=total2+d[6]

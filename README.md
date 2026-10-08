@@ -126,4 +126,4 @@ encript.jpg            image from the original upload; no code or schema reads i
 
 ## License
 
-Not decided yet: the repository carries no license file, so no license is granted. The author has to choose one before this section can state anything.
+MIT — see [LICENSE](LICENSE).

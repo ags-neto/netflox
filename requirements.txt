@@ -1,0 +1,5 @@
+# Runtime dependency of database.py (the only third-party import in the code).
+# psycopg2-binary ships the libpq it needs, which is what a clone-and-run user
+# wants; distributions that prefer to build against a system libpq can install
+# psycopg2 instead.
+psycopg2-binary>=2.9,<3

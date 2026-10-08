@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local secrets: NETFLOX_DB_PASSWORD / NETFLOX_DEMO_PASSWORD live in the
+# environment, never in a file. A .env is loaded by docker compose, so it is
+# ignored here to make the accident harder.
+.env
+
+# Tooling
+.pytest_cache/
